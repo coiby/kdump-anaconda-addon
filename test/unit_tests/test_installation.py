@@ -181,9 +181,9 @@ class KdumpInstallationTestCase(TestCase):
         assert mock_exec.call_count == 2
 
     @patch("com_redhat_kdump.service.installation.util")
-    @patch("shutil.which")
-    def test_installation_kdump_disabled(self, mock_shutil, mock_util):
-        mock_shutil.return_value = True
+    @patch("os.path.exists")
+    def test_installation_kdump_disabled(self, mock_os_path, mock_util):
+        mock_os_path.return_value = True
         task = KdumpInstallationTask(
             sysroot="/mnt/sysroot",
             kdump_enabled=False
@@ -196,9 +196,9 @@ class KdumpInstallationTestCase(TestCase):
         )
 
     @patch("com_redhat_kdump.service.installation.util")
-    @patch("shutil.which")
-    def test_installation_kdump_enabled(self, mock_shutil, mock_util):
-        mock_shutil.return_value = True
+    @patch("os.path.exists")
+    def test_installation_kdump_enabled(self, mock_os_path, mock_util):
+        mock_os_path.return_value = True
         task = KdumpInstallationTask(
             sysroot="/mnt/sysroot",
             kdump_enabled=True
@@ -211,9 +211,9 @@ class KdumpInstallationTestCase(TestCase):
         )
 
     @patch("com_redhat_kdump.service.installation.util")
-    @patch("shutil.which")
-    def test_installation_kdump_disable_no_systemctl(self, mock_shutil, mock_util):
-        mock_shutil.return_value = False
+    @patch("os.path.exists")
+    def test_installation_kdump_disable_no_systemctl(self, mock_os_path, mock_util):
+        mock_os_path.return_value = False
         task = KdumpInstallationTask(
             sysroot="/mnt/sysroot",
             kdump_enabled=False
