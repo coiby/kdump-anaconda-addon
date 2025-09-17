@@ -29,6 +29,7 @@ from com_redhat_kdump.constants import KDUMP
 from com_redhat_kdump.service.installation import KdumpBootloaderConfigurationTask, KdumpInstallationTask, KdumpCrypttabSetupTask
 from com_redhat_kdump.service.kdump_interface import KdumpInterface
 from com_redhat_kdump.service.kickstart import KdumpKickstartSpecification
+import blivet.arch
 
 log = logging.getLogger(__name__)
 
@@ -144,7 +145,7 @@ class KdumpService(KickstartService):
             )
         ]
 
-        if self.kdump_enabled:
+        if self.kdump_enabled and blivet.arch.get_arch() == "x86_64":
             tasks.append(
                 KdumpCrypttabSetupTask(
                     sysroot=conf.target.system_root
