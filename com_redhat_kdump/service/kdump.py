@@ -26,7 +26,7 @@ from pyanaconda.modules.common.structures.requirement import Requirement
 
 from com_redhat_kdump.common import getMemoryBounds
 from com_redhat_kdump.constants import KDUMP
-from com_redhat_kdump.service.installation import KdumpBootloaderConfigurationTask, KdumpInstallationTask
+from com_redhat_kdump.service.installation import KdumpBootloaderConfigurationTask, KdumpInstallationTask, KdumpCrypttabSetupTask
 from com_redhat_kdump.service.kdump_interface import KdumpInterface
 from com_redhat_kdump.service.kickstart import KdumpKickstartSpecification
 
@@ -137,12 +137,21 @@ class KdumpService(KickstartService):
 
         :return: a list of tasks
         """
-        return [
+        tasks = [
             KdumpInstallationTask(
                 sysroot=conf.target.system_root,
                 kdump_enabled=self.kdump_enabled,
             )
         ]
+
+        if self.kdump_enabled:
+            tasks.append(
+                KdumpCrypttabSetupTask(
+                    sysroot=conf.target.system_root
+                )
+            )
+
+        return tasks
 
     def configure_bootloader_with_tasks(self, kernels):
         return [

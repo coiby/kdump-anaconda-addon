@@ -1,7 +1,7 @@
 from unittest.case import TestCase
 from unittest.mock import patch
 from com_redhat_kdump.constants import FADUMP_CAPABLE_FILE
-from com_redhat_kdump.service.installation import KdumpBootloaderConfigurationTask, KdumpInstallationTask
+from com_redhat_kdump.service.installation import KdumpBootloaderConfigurationTask, KdumpInstallationTask, KdumpCrypttabSetupTask
 
 SYSROOT = "/sysroot"
 
@@ -220,3 +220,55 @@ class KdumpInstallationTestCase(TestCase):
         )
         task.run()
         mock_util.execWithRedirect.assert_not_called()
+
+    @patch("pyanaconda.core.util.execWithCapture")
+    def test_crypttab_setup_check_help_with_setup_crypttab(self, mock_exec):
+        mock_exec.return_value = "setup-crypttab   Setup crypttab for kdump"
+        task = KdumpCrypttabSetupTask(sysroot="/mnt/sysroot")
+        result = task._has_setup_crypttab_command()
+        mock_exec.assert_called_once_with("kdumpctl", ["help"], root="/mnt/sysroot")
+        assert result is True
+
+    @patch("pyanaconda.core.util.execWithCapture")
+    def test_crypttab_setup_check_help_without_setup_crypttab(self, mock_exec):
+        mock_exec.return_value = "start   Start kdump\nstop    Stop kdump"
+        task = KdumpCrypttabSetupTask(sysroot="/mnt/sysroot")
+        result = task._has_setup_crypttab_command()
+        mock_exec.assert_called_once_with("kdumpctl", ["help"], root="/mnt/sysroot")
+        assert result is False
+
+    @patch("pyanaconda.core.util.execWithCapture")
+    def test_crypttab_setup_check_help_kdumpctl_not_found(self, mock_exec):
+        mock_exec.side_effect = FileNotFoundError()
+        task = KdumpCrypttabSetupTask(sysroot="/mnt/sysroot")
+        result = task._has_setup_crypttab_command()
+        mock_exec.assert_called_once_with("kdumpctl", ["help"], root="/mnt/sysroot")
+        assert result is False
+
+    @patch("pyanaconda.core.util.execWithRedirect")
+    @patch("com_redhat_kdump.service.installation.KdumpCrypttabSetupTask._has_setup_crypttab_command")
+    def test_crypttab_setup_run_with_command_available(self, mock_has_command, mock_exec):
+        mock_has_command.return_value = True
+        task = KdumpCrypttabSetupTask(sysroot="/mnt/sysroot")
+        task.run()
+        mock_has_command.assert_called_once()
+        mock_exec.assert_called_once_with("kdumpctl", ["setup-crypttab"], root="/mnt/sysroot")
+
+    @patch("pyanaconda.core.util.execWithRedirect")
+    @patch("com_redhat_kdump.service.installation.KdumpCrypttabSetupTask._has_setup_crypttab_command")
+    def test_crypttab_setup_run_without_command_available(self, mock_has_command, mock_exec):
+        mock_has_command.return_value = False
+        task = KdumpCrypttabSetupTask(sysroot="/mnt/sysroot")
+        task.run()
+        mock_has_command.assert_called_once()
+        mock_exec.assert_not_called()
+
+    @patch("pyanaconda.core.util.execWithRedirect")
+    @patch("com_redhat_kdump.service.installation.KdumpCrypttabSetupTask._has_setup_crypttab_command")
+    def test_crypttab_setup_run_execution_failure(self, mock_has_command, mock_exec):
+        mock_has_command.return_value = True
+        mock_exec.side_effect = Exception("Command failed")
+        task = KdumpCrypttabSetupTask(sysroot="/mnt/sysroot")
+        task.run()
+        mock_has_command.assert_called_once()
+        mock_exec.assert_called_once_with("kdumpctl", ["setup-crypttab"], root="/mnt/sysroot")
