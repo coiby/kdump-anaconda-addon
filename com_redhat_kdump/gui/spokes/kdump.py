@@ -31,6 +31,7 @@ from pyanaconda.ui.categories.system import SystemCategory
 from pyanaconda.ui.gui.spokes import NormalSpoke
 from pyanaconda.ui.gui.utils import fancy_set_sensitive
 from pyanaconda.ui.communication import hubQ
+import blivet.arch
 
 from com_redhat_kdump.i18n import _, N_
 from com_redhat_kdump.constants import FADUMP_CAPABLE_FILE, KDUMP, ENCRYPTION_WARNING
@@ -135,7 +136,7 @@ class KdumpSpoke(NormalSpoke):
         self._enableButton.emit("toggled")
 
         self.clear_info()
-        if self._luks_devs:
+        if self._luks_devs and blivet.arch.get_arch() != "x86_64":
             self.set_warning(_(ENCRYPTION_WARNING))
 
     def apply(self):
