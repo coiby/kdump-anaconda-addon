@@ -29,7 +29,7 @@ from com_redhat_kdump.common import getLuksDevices
 
 log = logging.getLogger(__name__)
 
-__all__ = ["KdumpBootloaderConfigurationTask", "KdumpInstallationTask"]
+__all__ = ["KdumpBootloaderConfigurationTask", "KdumpInstallationTask", "KdumpCrypttabSetupTask"]
 
 
 class KdumpBootloaderConfigurationTask(Task):
@@ -156,3 +156,40 @@ class KdumpInstallationTask(Task):
             [systemctl_action, "kdump.service"],
             root=self._sysroot
         )
+
+
+class KdumpCrypttabSetupTask(Task):
+    """The task for setting up crypttab for kdump."""
+
+    def __init__(self, sysroot):
+        """Create a task."""
+        super().__init__()
+        self._sysroot = sysroot
+
+    @property
+    def name(self):
+        return "Setup crypttab for kdump"
+
+    def _has_setup_crypttab_command(self):
+        """Check if kdumpctl has setup-crypttab subcommand by checking help output."""
+        try:
+            help_output = util.execWithCapture("kdumpctl", ["help"], root=self._sysroot)
+            return "setup-crypttab" in help_output
+        except FileNotFoundError:
+            log.debug("kdumpctl command not found")
+            return False
+        except Exception as e:
+            log.warning("Failed to check kdumpctl help: %s", e)
+            return False
+
+    def run(self):
+        """Run the task."""
+        if not self._has_setup_crypttab_command():
+            log.debug("kdumpctl setup-crypttab command not available, skipping")
+            return
+
+        try:
+            util.execWithRedirect("kdumpctl", ["setup-crypttab"], root=self._sysroot)
+            log.debug("Successfully executed kdumpctl setup-crypttab")
+        except Exception as e:
+            log.warning("Failed to execute kdumpctl setup-crypttab: %s", e)
